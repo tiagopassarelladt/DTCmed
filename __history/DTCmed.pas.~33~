@@ -1,0 +1,198 @@
+unit DTCmed;
+
+interface
+
+uses
+  System.SysUtils, System.Classes, System.Generics.Collections,
+  System.Net.HttpClient,MSHTML,SHDocVw,vcl.forms,system.Win.ComObj,system.Variants;
+
+type TCmed = class
+    Ean               : string;
+    RegistroMS        : string;
+    Produto           : string;
+    Laboratorio       : string;
+    Apresentacao      : string;
+    ClasseTerapeutica : string;
+    TipoProduto       : string;
+    Tarja             : string;
+end;
+
+type
+  TDTCmed = class(TComponent)
+  private
+    FPathArqCMED: String;
+    FURLCmed: String;
+    FUrlArqCmed: String;
+    FForm: Tform;
+    procedure SetPathArqCMED(const Value: String);
+    procedure SetURLCmed(const Value: String);
+    procedure SetUrlArqCmed(const Value: String);
+    procedure SetForm(const Value: Tform);
+  protected
+
+  public
+    RetornoCMED:Tlist<TCmed>;
+    function ObterTabelaCMED:TCmed;
+
+    constructor Create(AOwner: TComponent); override;
+    destructor Destroy; override;
+
+  published
+    property PathArqCMED:String read FPathArqCMED write SetPathArqCMED;
+    property URLCmed:String read FURLCmed write SetURLCmed;
+    property UrlArqCmed:String read FUrlArqCmed write SetUrlArqCmed;
+    property Formulario:TForm read FForm write SetForm;
+  end;
+
+procedure Register;
+
+implementation
+
+uses
+  Vcl.Controls;
+
+procedure Register;
+begin
+  RegisterComponents('DT Inovacao', [TDTCmed]);
+end;
+
+{ TDTCmed }
+
+constructor TDTCmed.Create(AOwner: TComponent);
+begin
+  inherited Create(AOwner);
+
+  FURLCmed    := 'https://www.gov.br/anvisa/pt-br/assuntos/medicamentos/cmed/precos';
+  RetornoCMED := TList<TCmed>.Create;
+end;
+
+destructor TDTCmed.Destroy;
+begin
+  RetornoCMED.Clear;
+  FreeAndNil( RetornoCMED );
+
+  inherited Destroy;
+end;
+
+function TDTCmed.ObterTabelaCMED: TCmed;
+var
+  Index          : Integer;
+  Doc            : IHTMLDocument2;
+  Anchor         : IHTMLAnchorElement;
+  Web            : TWebBrowser;
+  Http           : THttpclient;
+  mArq           : TMemoryStream;
+  X,y,i          : integer;
+  Processou      : Boolean;
+  caminho        : string;
+  Linhas,Colunas : integer;
+  excel          : variant;
+  l,c            : integer;
+  AbaXLS         : OLEVariant;
+  lst            : TCmed;
+begin
+  Web                     := TWebBrowser.Create(self);
+  TWinControl(Web).Name   := 'Web1';
+  TWinControl(Web).Parent := Formulario;
+  Web.Silent              := True;
+  Web.Visible             := False;
+  Web.Hide;
+  Web.Navigate( FURLCmed );
+  while Web.ReadyState <> READYSTATE_COMPLETE do
+    Application.ProcessMessages;
+  Doc := Web.Document as IHTMLDocument2;
+  for Index := 0 to Doc.all.length - 1 do
+    if Supports(Doc.all.item(Index, 0), IHTMLAnchorElement, Anchor) then
+    begin
+      if string(Anchor.href).Contains('.xls') and string(Anchor.href).Contains('@download') then
+      begin
+          FUrlArqCmed := Anchor.href;
+          Break;
+      end;
+    end;
+
+    FreeAndNil( web );
+   try
+       Http := THTTPClient.Create;
+       mArq := TMemoryStream.Create;
+
+       Http.Get( FUrlArqCmed, mArq );
+
+       if not DirectoryExists( FPathArqCMED ) then
+              ForceDirectories( FPathArqCMED );
+
+       if FileExists( FPathArqCMED +  'Cmed.xls' ) then
+          DeleteFile( FPathArqCMED +  'Cmed.xls' );
+
+       mArq.SaveToFile( FPathArqCMED +  'Cmed.xls' );
+
+   finally
+       FreeAndNil( http );
+       FreeAndNil( mArq );
+   end;
+
+   caminho := FPathArqCMED + 'Cmed.xls';
+
+   Excel := CreateOleObject('Excel.Application');
+   Excel.Visible := False;
+   Excel.WorkBooks.Add(caminho);
+   {Selecione aqui a aba que você deseja abrir primeiro - 1,2,3,4....}
+   Excel.WorkSheets[1].Activate;
+
+   AbaXLS  := Excel.Workbooks[1].WorkSheets[1];
+   Colunas := Excel.Cells.SpecialCells(11).Column;
+   Linhas  := Excel.Cells.SpecialCells(11).row;
+
+   RetornoCMED.Clear;
+
+   for c := 1 to Pred( Linhas ) do
+   begin
+         try
+           if Trim( Excel.Cells.Item[c,9].Value ) <> '' then
+           begin
+                 lst                   := TCmed.Create;
+                 lst.Ean               := Excel.Cells.Item[c,6].Value;
+                 lst.RegistroMS        := Excel.Cells.Item[c,5].Value;
+                 lst.Produto           := Excel.Cells.Item[c,9].Value;
+                 lst.Laboratorio       := Excel.Cells.Item[c,3].Value;
+                 lst.Apresentacao      := Excel.Cells.Item[c,10].Value;
+                 lst.ClasseTerapeutica := Excel.Cells.Item[c,11].Value;
+                 lst.TipoProduto       := Excel.Cells.Item[c,12].Value;
+                 lst.Tarja             := Excel.Cells.Item[c,40].Value;
+                 RetornoCMED.Add( lst );
+           end;
+         except
+
+         end;
+
+           //Label79.Caption := IntToStr(i) + ' - Registros Importados.';
+           //Application.ProcessMessages;
+   end;
+
+   if not VarIsEmpty(Excel) then
+      Excel.Quit;
+
+
+end;
+
+procedure TDTCmed.SetForm(const Value: Tform);
+begin
+  FForm := Value;
+end;
+
+procedure TDTCmed.SetPathArqCMED(const Value: String);
+begin
+  FPathArqCMED := Value;
+end;
+
+procedure TDTCmed.SetUrlArqCmed(const Value: String);
+begin
+  FUrlArqCmed := Value;
+end;
+
+procedure TDTCmed.SetURLCmed(const Value: String);
+begin
+  FURLCmed := Value;
+end;
+
+end.

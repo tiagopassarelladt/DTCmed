@@ -1,0 +1,12 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<BorlandProject>
+	<Transactions>
+    <Transaction>2022/09/21 23:35:17.000.609,=rtl.dcp</Transaction>
+    <Transaction>2022/09/21 23:35:34.000.906,C:\Users\tiago\OneDrive\Documentos\Embarcadero\Studio\Projects\Cmed.dproj=C:\Users\tiago\OneDrive\Documentos\Embarcadero\Studio\Projects\Package1.dproj</Transaction>
+    <Transaction>2022/09/21 23:36:37.000.669,=C:\Users\tiago\Dropbox\Componentes\DTCmed\DTCmed.pas</Transaction>
+    <Transaction>2022/09/21 23:36:44.000.189,C:\Users\tiago\Dropbox\Componentes\DTCmed\Cmed.dproj=C:\Users\tiago\OneDrive\Documentos\Embarcadero\Studio\Projects\Cmed.dproj</Transaction>
+    <Transaction>2022/09/21 23:58:04.000.895,=vclie.dcp</Transaction>
+    <Transaction>2022/09/21 23:58:04.000.844,=vcl.dcp</Transaction>
+    <Transaction>2022/09/21 23:58:04.000.951,=vcledge.dcp</Transaction>
+  </Transactions>
+</BorlandProject>
